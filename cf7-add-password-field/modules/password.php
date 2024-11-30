@@ -215,149 +215,289 @@ if ( is_admin() ) {
 	add_action( 'wpcf7_admin_init' , 'wpcf7_k_password_add_tag_generator' , 55 );
 }
 
-function wpcf7_k_password_add_tag_generator( $contact_form , $args = '' ){
-	if(!class_exists('WPCF7_TagGenerator')) {
-		return false;
-	}
+function wpcf7_k_password_add_tag_generator(){
 	$tag_generator = WPCF7_TagGenerator::get_instance();
 	$tag_generator->add( 'password', __( 'Password', 'cf7-add-password-field' ),
-		'wpcf7_k_password_pane_confirm', array( 'nameless' => 1 ) );
+		'wpcf7_k_password_pane_confirm', array( 'nameless' => 1, 'version'=>'2') );
 }
 
-function wpcf7_k_password_pane_confirm( $contact_form, $args = '' ) {
-	$args = wp_parse_args( $args, array() );
-	$description = __( "Generate a form-tag for a password button.", 'cf7-add-password-field' );
+function wpcf7_k_password_pane_confirm( $contact_form, $options) {
+	$field_types = array(
+		'password' => array(
+			'display_name' => __( 'Password field', 'cf7-add-password-field' ),
+			'heading' => __( 'Password field form-tag generator', 'cf7-add-password-field' ),
+			'description' => __( 'Generate a form-tag for a password button.', 'cf7-add-password-field' ),
+			'maybe_purpose' => 'author_name',
+		)
+	);
 
+	$basetype = $options['id'];
+
+	if ( ! in_array( $basetype, array_keys( $field_types ) ) ) {
+		$basetype = 'password';
+	}
+
+	$tgg = new WPCF7_TagGeneratorGenerator( $options['content'] );
 ?>
+<header class="description-box">
+	<h3><?php
+		echo esc_html( $field_types[$basetype]['heading'] );
+	?></h3>
+
+	<p><?php
+		$description = wp_kses(
+			$field_types[$basetype]['description'],
+			array(
+				'a' => array( 'href' => true ),
+				'strong' => array(),
+			),
+			array( 'http', 'https' )
+		);
+
+		echo $description;
+	?></p>
+</header>
+
 <div class="control-box">
+	<?php
+		$tgg->print( 'field_type', array(
+			'with_required' => true,
+			'select_options' => array(
+				$basetype => $field_types[$basetype]['display_name'],
+			),
+		) );
+		$tgg->print( 'field_name', array(
+			'ask_if' => $field_types[$basetype]['maybe_purpose']
+		) );
+	?>
 	<fieldset>
-		<legend><?php echo  esc_html( $description ); ?></legend>
-
-		<table class="form-table">
-		<tbody>
-			<tr>
-				<th scope="row"><?php echo esc_html( __( 'Field type', 'contact-form-7' ) ); ?></th>
-				<td>
-					<fieldset>
-						<legend class="screen-reader-text"><?php echo esc_html( __( 'Field type', 'contact-form-7' ) ); ?></legend>
-						<label><input type="checkbox" name="required" /> <?php echo esc_html( __( 'Required field', 'contact-form-7' ) ); ?></label>
-					</fieldset>
-				</td>
-			</tr>
-			<tr>
-				<th scope="row"><label
-					for="<?php echo esc_attr( $args['content'] . '-values' ); ?>"><?php echo esc_html( __( 'Name', 'contact-form-7' ) ); ?></label>
-				</th>
-				<td><input type="text" name="name" class="oneline"
-				           id="<?php echo esc_attr( $args['content'] . '-values' ); ?>"/></td>
-			</tr>
-
-			<tr>
-				<th scope="row"><label
-					for="<?php echo esc_attr( $args['content'] . '-id' ); ?>"><?php echo esc_html( __( 'Id attribute', 'contact-form-7' ) ); ?></label>
-				</th>
-				<td><input type="text" name="id" class="idvalue oneline option"
-				           id="<?php echo esc_attr( $args['content'] . '-id' ); ?>"/><br/>
-				           <?php echo esc_html( __( 'If the ability to display a password wish be enabled, set the same value of  “id attribute” and “name”.', 'cf7-add-password-field' ) ); ?><br/></td>
-			</tr>
-
-			<tr>
-				<th scope="row"><label
-					for="<?php echo esc_attr( $args['content'] . '-class' ); ?>"><?php echo esc_html( __( 'Class attribute', 'contact-form-7' ) ); ?></label>
-				</th>
-				<td><input type="text" name="class" class="classvalue oneline option"
-				           id="<?php echo esc_attr( $args['content'] . '-class' ); ?>"/></td>
-			</tr>
-			
-			<tr>
-				<th scope="row"><label for="<?php echo esc_attr( $args['content'] . '-values' ); ?>"><?php echo esc_html( __( 'Default value', 'contact-form-7' ) ); ?></label></th>
-				<td><input type="text" name="values" class="oneline" id="<?php echo esc_attr( $args['content'] . '-values' ); ?>" /><br />
-	<label><input type="checkbox" name="placeholder" class="option" /> <?php echo esc_html( __( 'Use this text as the placeholder of the field', 'contact-form-7' ) ); ?></label></td>
-			</tr>
-			<tr>
-				<th scope="row"><label
-					for="<?php echo esc_attr( $args['content'] . '-minlength' ); ?>"><?php echo esc_html( __( 'Password Length', 'cf7-add-password-field' ) ); ?></label>
-				</th>
-				<td> Min <input type="text" name="minlength" class="classvalue oneline option"
-				           id="<?php echo esc_attr( $args['content'] . '-minlength' ); ?>"/><br/>
-				           <?php echo esc_html( __( 'Required more than the specified number of characters the input.', 'cf7-add-password-field' ) ); ?><br/>
-				           Max <input type="text" name="maxlength" class="classvalue oneline option"
-				           id="<?php echo esc_attr( $args['content'] . '-maxlength' ); ?>"/><br/>
-				           <?php echo esc_html( __( 'Required less than the specified number of characters the input.', 'cf7-add-password-field' ) ); ?></td>
-			</tr>
-			<tr>
-				<th scope="row"><label
-					for="<?php echo esc_attr( $args['content'] . '-password_strength' ); ?>"><?php echo esc_html( __( 'Password Strength', 'cf7-add-password-field' ) ); ?></label>
-				</th>
-				<td><input type="text" name="password_strength" class="classvalue oneline option"
-				           id="<?php echo esc_attr( $args['content'] . '-password_strength' ); ?>" /><br/>
-				           1 = <?php echo esc_html( __( 'Numbers only', 'cf7-add-password-field' ) ); ?><br/>
-				           2 = <?php echo esc_html( __( 'Include letters and numbers', 'cf7-add-password-field' ) ); ?><br/>
-				           3 = <?php echo esc_html( __( 'Include upper and lower case letters and numbers', 'cf7-add-password-field' ) ); ?><br/>
-				           4 = <?php echo esc_html( __( 'Include upper and lower case letters, numbers, and marks', 'cf7-add-password-field' ) ); ?>
-				</td>
-			</tr>
-			<tr>
-				<th scope="row"><label
-					for="<?php echo esc_attr( $args['content'] . '-password_check' ); ?>"><?php echo esc_html( __( 'Password Check', 'cf7-add-password-field' ) ); ?></label>
-				</th>
-				<td><input type="text" name="password_check" class="classvalue oneline option"
-				           id="<?php echo esc_attr( $args['content'] . '-password_check' ); ?>" /><br/>
-				           <?php echo esc_html( __( 'Enter the value of the “name” on the field if you wish to verify a value of a password field. In case of verifying the password value that you set [password password-100], set [password* password-101 password_check:password-100].', 'cf7-add-password-field' ) ); ?><br/>
-				</td>
-			</tr>
-			<tr>
-				<th scope="row"><label
-					for="<?php echo esc_attr( $args['content'] . '-specific_password_check' ); ?>"><?php echo esc_html( __( 'Specific Password Check', 'cf7-add-password-field' ) ); ?></label>
-				</th>
-				<td><input type="text" name="specific_password_check" class="classvalue oneline option"
-				           id="<?php echo esc_attr( $args['content'] . '-specific_password_check' ); ?>". placeholder="password1_password2"/><br/>
-				           <?php echo esc_html( __( ' Enter your password separated by underline(Passwords cannot contain underline and marks escaped by preg_quote are not allowed.). Check if it matches the password entered here. If you have set a password strength, the password set here should also follow that rule.', 'cf7-add-password-field' ) ); ?><br/>
-				</td>
-			</tr>
-			<tr>
-				<th scope="row"><?php echo esc_html( __( 'Hide Icon', 'contact-form-7' ) ); ?></th>
-				<td>
-					<fieldset>
-						<legend class="screen-reader-text"><?php echo esc_html( __( 'Hide Icon', 'contact-form-7' ) ); ?></legend>
-						<label><input type="checkbox" name="hideIcon"  class="option" /> <?php echo esc_html( __( 'Hide the icon that shows the password', 'contact-form-7' ) ); ?></label>
-					</fieldset>
-				</td>
-			</tr>
-			<tr>
-				<th scope="row"><?php echo esc_html( __( 'Icon Location', 'contact-form-7' ) ); ?></th>
-				<td>
-					<fieldset>
-						<legend class="screen-reader-text"><?php echo esc_html( __( 'Icon Location', 'contact-form-7' ) ); ?></legend>
-						<label><?php echo esc_html( __( 'If you wish to customize the position of the icons, please set the following stylesheet values.', 'contact-form-7' ) );?>
-						<br/>
-						<table>
-						<tr><td>position:</td><td><input type="text" name="Icon_position" class="classvalue oneline option"
-				           id="<?php echo esc_attr( $args['content'] . '-Icon_position' ); ?>"/></td></tr>
-						<tr><td>float:</td><td><input type="text" name="Icon_float" class="classvalue oneline option"
-				           id="<?php echo esc_attr( $args['content'] . '-Icon_float' ); ?>"/></td></tr>
-						<tr><td>top:</td><td><input type="text" name="Icon_top" class="classvalue oneline option"
-				           id="<?php echo esc_attr( $args['content'] . '-Icon_top' ); ?>"/></td></tr>
-						<tr><td>margin:</td><td><input type="text" name="Icon_margin" class="classvalue oneline option"
-				           id="<?php echo esc_attr( $args['content'] . '-Icon_margin' ); ?>"/></td></tr>
-						<tr><td>margin-left:</td><td><input type="text" name="Icon_marginleft" class="classvalue oneline option"
-				           id="<?php echo esc_attr( $args['content'] . '-Icon_marginleft' ); ?>"/></td></tr>
-				        </table>
-					</fieldset>
-				</td>
-			</tr>
- 		</tbody>
-		</table>
+		<legend id="<?php echo esc_attr( $tgg->ref( 'name-option-legend' ) ); ?>"><?php
+			echo esc_html( __( 'Name', 'contact-form-7' ) );
+		?></legend>
+		<label><?php
+		echo sprintf(
+			'<input %s />',
+			wpcf7_format_atts( array(
+				'type' => 'text',
+				'aria-labelledby' => $tgg->ref( 'name-option-legend' ),
+				'aria-describedby' => $tgg->ref( 'name-option-description' ),
+				'data-tag-part' => 'option',
+				'data-tag-option' => 'name:',
+			) )
+		);
+		?></label>
 	</fieldset>
+	<fieldset>
+		<legend id="<?php echo esc_attr( $tgg->ref( 'id-option-legend' ) ); ?>"><?php
+			echo esc_html( __( 'Id attribute', 'contact-form-7' ) );
+		?></legend>
+		<label><?php
+		echo sprintf(
+			'<input %s />',
+			wpcf7_format_atts( array(
+				'type' => 'text',
+				'aria-labelledby' => $tgg->ref( 'id-option-legend' ),
+				'aria-describedby' => $tgg->ref( 'id-option-description' ),
+				'data-tag-part' => 'option',
+				'data-tag-option' => 'id:',
+			) )
+		);
+		?></label>
+	</fieldset>
+	<?php
+
+		$tgg->print( 'class_attr' );
+
+		$tgg->print( 'default_value', array(
+			'with_placeholder' => true,
+		) );
+	?>
+	<fieldset>
+		<legend id="<?php echo esc_attr( $tgg->ref( 'minlength-option-legend' ) ); ?>"><?php
+			echo esc_html( __( 'Password Length', 'cf7-add-password-field' ) );
+		?></legend>
+		<label>Min <?php
+		echo sprintf(
+			'<input %s />',
+			wpcf7_format_atts( array(
+				'type' => 'text',
+				'aria-labelledby' => $tgg->ref( 'minlength-option-legend' ),
+				'aria-describedby' => $tgg->ref( 'minlength-option-description' ),
+				'data-tag-part' => 'option',
+				'data-tag-option' => 'minlength:',
+			) )
+		);
+		?></label><br/>
+		<?php echo esc_html( __( 'Required more than the specified number of characters the input.', 'cf7-add-password-field' ) ); ?><br/>
+		<label>Max <?php
+		echo sprintf(
+			'<input %s />',
+			wpcf7_format_atts( array(
+				'type' => 'text',
+				'aria-labelledby' => $tgg->ref( 'maxlength-option-legend' ),
+				'aria-describedby' => $tgg->ref( 'maxlength-option-description' ),
+				'data-tag-part' => 'option',
+				'data-tag-option' => 'maxlength:',
+			) )
+		);
+		?></label><br/>
+		<?php echo esc_html( __( 'Required less than the specified number of characters the input.', 'cf7-add-password-field' ) ); ?>
+	</fieldset>
+	<fieldset>
+		<legend id="<?php echo esc_attr( $tgg->ref( 'password_strength-option-legend' ) ); ?>"><?php
+			echo esc_html( __( 'Password Strength', 'cf7-add-password-field' ) );
+		?></legend>
+		<label><?php
+		echo sprintf(
+			'<input %s />',
+			wpcf7_format_atts( array(
+				'type' => 'text',
+				'aria-labelledby' => $tgg->ref( 'password_strength-option-legend' ),
+				'aria-describedby' => $tgg->ref( 'password_strength-option-description' ),
+				'data-tag-part' => 'option',
+				'data-tag-option' => 'password_strength:',
+			) )
+		);
+		?></label><br/>
+		1 = <?php echo esc_html( __( 'Numbers only', 'cf7-add-password-field' ) ); ?><br/>
+		2 = <?php echo esc_html( __( 'Include letters and numbers', 'cf7-add-password-field' ) ); ?><br/>
+		3 = <?php echo esc_html( __( 'Include upper and lower case letters and numbers', 'cf7-add-password-field' ) ); ?><br/>
+		4 = <?php echo esc_html( __( 'Include upper and lower case letters, numbers, and marks', 'cf7-add-password-field' ) ); ?>	
+	</fieldset>
+	<fieldset>
+		<legend id="<?php echo esc_attr( $tgg->ref( 'password_check-option-legend' ) ); ?>"><?php
+			echo esc_html( __( 'Password Check', 'cf7-add-password-field' ) );
+		?></legend>
+		<label><?php
+		echo sprintf(
+			'<input %s />',
+			wpcf7_format_atts( array(
+				'type' => 'text',
+				'aria-labelledby' => $tgg->ref( 'password_check-option-legend' ),
+				'aria-describedby' => $tgg->ref( 'password_check-option-description' ),
+				'data-tag-part' => 'option',
+				'data-tag-option' => 'password_check:',
+			) )
+		);
+		?></label><br/>
+		<?php echo esc_html( __( 'Enter the value of the “name” on the field if you wish to verify a value of a password field. In case of verifying the password value that you set [password password-100], set [password* password-101 password_check:password-100].', 'cf7-add-password-field' ) ); ?>
+	</fieldset>
+	<fieldset>
+		<legend id="<?php echo esc_attr( $tgg->ref( 'specific_password_check-option-legend' ) ); ?>"><?php
+			echo esc_html( __( 'Specific Password Check', 'cf7-add-password-field' ) );
+		?></legend>
+		<label><?php
+		echo sprintf(
+			'<input %s placeholder="password1_password2"/>',
+			wpcf7_format_atts( array(
+				'type' => 'text',
+				'aria-labelledby' => $tgg->ref( 'specific_password_check-option-legend' ),
+				'aria-describedby' => $tgg->ref( 'specific_password_check-option-description' ),
+				'data-tag-part' => 'option',
+				'data-tag-option' => 'specific_password_check:',
+			) )
+		);
+		?></label><br/>
+		<?php echo esc_html( __( ' Enter your password separated by underline(Passwords cannot contain underline and marks escaped by preg_quote are not allowed.). Check if it matches the password entered here. If you have set a password strength, the password set here should also follow that rule.', 'cf7-add-password-field' ) ); ?>
+	</fieldset>
+	<fieldset>
+		<legend id="<?php echo esc_attr( $tgg->ref( 'hideIcon-option-legend' ) ); ?>"><?php
+			echo esc_html( __( 'Hide Icon', 'cf7-add-password-field' ) );
+		?></legend>
+		<label><?php
+		echo sprintf(
+			'<input %s />',
+			wpcf7_format_atts( array(
+				'type' => 'checkbox',
+				'aria-labelledby' => $tgg->ref( 'hideIcon-option-legend' ),
+				'aria-describedby' => $tgg->ref( 'hideIcon-option-description' ),
+				'data-tag-part' => 'option',
+				'data-tag-option' => 'hideIcon',
+			) )
+		);
+		?></label><?php echo esc_html( __( 'Hide the icon that shows the password', 'cf7-add-password-field' ) ); ?><br/>
+	</fieldset>
+	<fieldset>
+		<legend id="<?php echo esc_attr( $tgg->ref( 'icon_location-option-legend' ) ); ?>"><?php
+			echo esc_html( __( 'Icon Location', 'cf7-add-password-field' ) );
+		?></legend>
+		<label><?php echo esc_html( __( 'If you wish to customize the position of the icons, please set the following stylesheet values.', 'contact-form-7' ) );?></label><br/>
+		<label>posotion:
+		<?php 
+		echo sprintf(
+			'<input %s />',
+			wpcf7_format_atts( array(
+				'type' => 'text',
+				'aria-labelledby' => $tgg->ref( 'Icon_position-option-legend' ),
+				'aria-describedby' => $tgg->ref( 'Icon_position-option-description' ),
+				'data-tag-part' => 'option',
+				'data-tag-option' => 'Icon_position:',
+			) )
+		);
+		?></label><br/>
+		<label>float:
+		<?php 
+		echo sprintf(
+			'<input %s />',
+			wpcf7_format_atts( array(
+				'type' => 'text',
+				'aria-labelledby' => $tgg->ref( 'Icon_float-option-legend' ),
+				'aria-describedby' => $tgg->ref( 'Icon_float-option-description' ),
+				'data-tag-part' => 'option',
+				'data-tag-option' => 'Icon_float:',
+			) )
+		);
+		?></label><br/>
+		<label>top:
+		<?php 
+		echo sprintf(
+			'<input %s />',
+			wpcf7_format_atts( array(
+				'type' => 'text',
+				'aria-labelledby' => $tgg->ref( 'Icon_top-option-legend' ),
+				'aria-describedby' => $tgg->ref( 'Icon_top-option-description' ),
+				'data-tag-part' => 'option',
+				'data-tag-option' => 'Icon_top:',
+			) )
+		);
+		?></label><br/>	
+		<label>margin:
+		<?php 
+		echo sprintf(
+			'<input %s />',
+			wpcf7_format_atts( array(
+				'type' => 'text',
+				'aria-labelledby' => $tgg->ref( 'Icon_margin-option-legend' ),
+				'aria-describedby' => $tgg->ref( 'Icon_margin-option-description' ),
+				'data-tag-part' => 'option',
+				'data-tag-option' => 'Icon_margin:',
+			) )
+		);
+		?></label><br/>	
+		<label>margin-left:
+		<?php 
+		echo sprintf(
+			'<input %s />',
+			wpcf7_format_atts( array(
+				'type' => 'text',
+				'aria-labelledby' => $tgg->ref( 'Icon_marginleft-option-legend' ),
+				'aria-describedby' => $tgg->ref( 'Icon_marginleft-option-description' ),
+				'data-tag-part' => 'option',
+				'data-tag-option' => 'Icon_marginleft:',
+			) )
+		);
+		?></label>
+	</fieldset>
+
 </div>
 
-<div class="insert-box">
-	<input type="text" name="password" class="tag code" readonly="readonly" onfocus="this.select()"/>
+<footer class="insert-box">
+	<?php
+		$tgg->print( 'insert_box_content' );
 
-	<div class="submitbox">
-		<input type="button" class="button button-primary insert-tag"
-		       value="<?php echo esc_attr( __( 'Insert Tag', 'contact-form-7' ) ); ?>"/>
-	</div>
-</div>
+		$tgg->print( 'mail_tag_tip' );
+	?>
+</footer>
+
 <?php
 }
