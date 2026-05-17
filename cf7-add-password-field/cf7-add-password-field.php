@@ -1,14 +1,23 @@
 <?php
 /*
-Plugin Name: Contact Form 7 Add Password field
+Plugin Name: Add Password Field for Contact Form 7
 Plugin URI: https://wordpress.org/plugins/cf7-add-password-field/
 Description: The plugin is to add a password filed to Contact form 7 plugin.
-Version: 5.0.1
+Version: 5.1.0
 Author: Kimiya Kitani
 Author URI: https://profiles.wordpress.org/kimipooh/
 Text Domain: cf7-add-password-field
-Domain Path: /languages
+License: GPL-2.0-or-later
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
 */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+if ( ! defined( 'CF7_ADD_PASSWORD_FIELD_VERSION' ) ) {
+	define( 'CF7_ADD_PASSWORD_FIELD_VERSION', '5.1.0' );
+}
 
 require_once( dirname( __FILE__  ) . '/modules/password.php');
 
@@ -27,11 +36,11 @@ add_filter( 'wpcf7_validate_password*', 'wpcf7_k_password_validation_filter', 10
 
 function regist_cf7_add_password_field_styles() {
     $plugin_url = plugin_dir_url( __FILE__ );
-    wp_enqueue_style('cf7_add_password_field_style', $plugin_url . 'css/all.css' );
+    wp_enqueue_style('cf7_add_password_field_style', $plugin_url . 'css/all.css', array(), CF7_ADD_PASSWORD_FIELD_VERSION );
 }
 function regist_cf7_add_password_field_scripts() {
     $plugin_url = plugin_dir_url( __FILE__ );
-    wp_enqueue_script('cf7_add_password_field_scripts', $plugin_url . 'js/eye.js', array(), false, array('in_footer'=>true));
+    wp_enqueue_script('cf7_add_password_field_scripts', $plugin_url . 'js/eye.js', array(), CF7_ADD_PASSWORD_FIELD_VERSION, array('in_footer'=>true));
 }
 add_action( 'wp_enqueue_scripts', 'regist_cf7_add_password_field_styles' );
 add_action( 'wp_enqueue_scripts', 'regist_cf7_add_password_field_scripts' );

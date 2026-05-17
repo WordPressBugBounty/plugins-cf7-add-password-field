@@ -1,12 +1,12 @@
-=== Contact Form 7 Add Password field ===
+=== Add Password Field for Contact Form 7 ===
 Contributors: kimipooh
 Tags: contact form
 Requires at least: 6.2
 Requires PHP: 7.4
-Tested up to: 6.7.2
-Stable tag: 5.0.1
-License: GPL v2
-License URI: http://www.gnu.org/licenses/gpl-2.0.html
+Tested up to: 7.0
+Stable tag: 5.1.0
+License: GPL-2.0-or-later
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 
 The plugin is to add a password filed to Contact form 7 plugin.
@@ -46,6 +46,11 @@ Reference: “Changing Contact Form 7 input values (28 January, 2023)” in http
 2. View of Contact Form 7
 
 == Changelog ==
+= 5.1.0 =
+* Addressed WordPress.org Plugin Check warnings.
+* Confirmed compatibility with WordPress 7.0.
+* Improved security, sanitization, and escaping.
+
 = 5.0.1 = 
 * Tested up WordPress 6.7.2 with PHP 8.3.19 and 8.4.5.
 

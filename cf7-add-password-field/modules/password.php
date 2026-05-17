@@ -1,17 +1,24 @@
 <?php
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 /**
 ** A base module for the following types of tags:
 **      [password] and [password*]              # Single-line password
 **/
 
-// Activate Language Files for WordPress 3.7 or lator
-load_plugin_textdomain('cf7-add-password-field');
-
 function wpcf7_add_form_tag_k_password() {
 	$features = array( 'name-attr' => true);
+	// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Existing public filter name is kept for backward compatibility.
 	$features = apply_filters( 'cf7-add-password-field-features',$features );
 	wpcf7_add_form_tag( array('password','password*'),
 		'wpcf7_k_password_form_tag_handler',$features );
+}
+
+function cf7_add_password_field_format_atts( $atts ) {
+	return wpcf7_format_atts( $atts );
 }
 
 function wpcf7_k_password_form_tag_handler( $tag ) {
@@ -107,19 +114,23 @@ function wpcf7_k_password_form_tag_handler( $tag ) {
 	}
 	$atts['name'] = $tag->name;
 
-	$atts = wpcf7_format_atts( $atts );
+	$atts_html = cf7_add_password_field_format_atts( $atts );
 
 	$tag_id = $tag->get_id_option();
 	if( empty($tag_id) ) $tag_id = $tag->name; // for the version 5.8 of Contact form 7: Contact form 7 ignores the id attribute if the same ID is already used for another element.
+	$tag_id_attr = esc_attr( $tag_id );
+	$tag_id_js = esc_js( $tag_id );
+	$style_attrib = esc_attr( $style_attrib );
+	$validation_error = wp_kses_post( $validation_error );
 
 	if( $tag_id === $tag->name && !$tag->has_option( 'hideIcon' ) ){
  		  $html = sprintf(
-			'<span class="wpcf7-form-control-wrap" data-name="%1$s"><input %2$s />%3$s<span style="'. $style_attrib .'"  id="buttonEye-'. $tag_id .'" class="fa fa-eye-slash" onclick="pushHideButton(\''. $tag_id .'\')"></span></span>',
-			sanitize_html_class( $tag->name ), $atts, $validation_error );
+			'<span class="wpcf7-form-control-wrap" data-name="%1$s"><input %2$s />%3$s<span style="%4$s"  id="buttonEye-%5$s" class="fa fa-eye-slash" onclick="pushHideButton(\'%6$s\')"></span></span>',
+			sanitize_html_class( $tag->name ), $atts_html, $validation_error, $style_attrib, $tag_id_attr, $tag_id_js );
 	}else{
 		$html = sprintf(
 			'<span class="wpcf7-form-control-wrap" data-name="%1$s"><input %2$s />%3$s</span>',
-			sanitize_html_class( $tag->name ), $atts, $validation_error );
+			sanitize_html_class( $tag->name ), $atts_html, $validation_error );
 	}
 	return $html;
 }
@@ -127,9 +138,12 @@ function wpcf7_k_password_form_tag_handler( $tag ) {
 function wpcf7_k_password_validation_filter( $result, $tag ) {
 	$name = $tag->name;
 
+	// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Contact Form 7 verifies submissions before running validation filters.
 	$value = isset( $_POST[$name] )
-		? trim( wp_unslash( strtr( (string) $_POST[$name], "\n", " " ) ) )
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Contact Form 7 verifies submissions before running validation filters.
+		? sanitize_text_field( wp_unslash( $_POST[$name] ) )
 		: '';
+	$value = trim( strtr( $value, "\n", " " ) );
 
 	$specific_password_check = $tag->get_option( 'specific_password_check', '', true);
 	if(!empty($specific_password_check)){
@@ -148,10 +162,14 @@ function wpcf7_k_password_validation_filter( $result, $tag ) {
 
 	$password_check = $tag->get_option( 'password_check', '', true);
 	if(!empty($password_check)){
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Contact Form 7 verifies submissions before running validation filters.
 		if(isset( $_POST[$password_check] )){
+			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Contact Form 7 verifies submissions before running validation filters.
 			$value_pass = isset( $_POST[$password_check] )
-		? trim( wp_unslash( strtr( (string) $_POST[$password_check], "\n", " " ) ) )
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Contact Form 7 verifies submissions before running validation filters.
+		? sanitize_text_field( wp_unslash( $_POST[$password_check] ) )
 		: '';
+			$value_pass = trim( strtr( $value_pass, "\n", " " ) );
 			if($value !== $value_pass ){
 					$result->invalidate($tag, __("Passwords do not match!", 'cf7-add-password-field' ));		
 			}
@@ -254,7 +272,14 @@ function wpcf7_k_password_pane_confirm( $contact_form, $options) {
 			array( 'http', 'https' )
 		);
 
-		echo $description;
+			echo wp_kses(
+				$description,
+				array(
+					'a' => array( 'href' => true ),
+					'strong' => array(),
+				),
+				array( 'http', 'https' )
+			);
 	?></p>
 </header>
 
@@ -272,12 +297,13 @@ function wpcf7_k_password_pane_confirm( $contact_form, $options) {
 	?>
 	<fieldset>
 		<legend id="<?php echo esc_attr( $tgg->ref( 'name-option-legend' ) ); ?>"><?php
-			echo esc_html( __( 'Name', 'contact-form-7' ) );
+			echo esc_html( __( 'Name', 'cf7-add-password-field' ) );
 		?></legend>
 		<label><?php
-		echo sprintf(
-			'<input %s />',
-			wpcf7_format_atts( array(
+			echo sprintf(
+				'<input %s />',
+				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- cf7_add_password_field_format_atts() wraps Contact Form 7's escaped attribute formatter.
+				cf7_add_password_field_format_atts( array(
 				'type' => 'text',
 				'aria-labelledby' => $tgg->ref( 'name-option-legend' ),
 				'aria-describedby' => $tgg->ref( 'name-option-description' ),
@@ -289,12 +315,13 @@ function wpcf7_k_password_pane_confirm( $contact_form, $options) {
 	</fieldset>
 	<fieldset>
 		<legend id="<?php echo esc_attr( $tgg->ref( 'id-option-legend' ) ); ?>"><?php
-			echo esc_html( __( 'Id attribute', 'contact-form-7' ) );
+			echo esc_html( __( 'Id attribute', 'cf7-add-password-field' ) );
 		?></legend>
 		<label><?php
-		echo sprintf(
-			'<input %s />',
-			wpcf7_format_atts( array(
+			echo sprintf(
+				'<input %s />',
+				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- cf7_add_password_field_format_atts() wraps Contact Form 7's escaped attribute formatter.
+				cf7_add_password_field_format_atts( array(
 				'type' => 'text',
 				'aria-labelledby' => $tgg->ref( 'id-option-legend' ),
 				'aria-describedby' => $tgg->ref( 'id-option-description' ),
@@ -317,9 +344,10 @@ function wpcf7_k_password_pane_confirm( $contact_form, $options) {
 			echo esc_html( __( 'Password Length', 'cf7-add-password-field' ) );
 		?></legend>
 		<label>Min <?php
-		echo sprintf(
-			'<input %s />',
-			wpcf7_format_atts( array(
+			echo sprintf(
+				'<input %s />',
+				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- cf7_add_password_field_format_atts() wraps Contact Form 7's escaped attribute formatter.
+				cf7_add_password_field_format_atts( array(
 				'type' => 'text',
 				'aria-labelledby' => $tgg->ref( 'minlength-option-legend' ),
 				'aria-describedby' => $tgg->ref( 'minlength-option-description' ),
@@ -330,9 +358,10 @@ function wpcf7_k_password_pane_confirm( $contact_form, $options) {
 		?></label><br/>
 		<?php echo esc_html( __( 'Required more than the specified number of characters the input.', 'cf7-add-password-field' ) ); ?><br/>
 		<label>Max <?php
-		echo sprintf(
-			'<input %s />',
-			wpcf7_format_atts( array(
+			echo sprintf(
+				'<input %s />',
+				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- cf7_add_password_field_format_atts() wraps Contact Form 7's escaped attribute formatter.
+				cf7_add_password_field_format_atts( array(
 				'type' => 'text',
 				'aria-labelledby' => $tgg->ref( 'maxlength-option-legend' ),
 				'aria-describedby' => $tgg->ref( 'maxlength-option-description' ),
@@ -348,9 +377,10 @@ function wpcf7_k_password_pane_confirm( $contact_form, $options) {
 			echo esc_html( __( 'Password Strength', 'cf7-add-password-field' ) );
 		?></legend>
 		<label><?php
-		echo sprintf(
-			'<input %s />',
-			wpcf7_format_atts( array(
+			echo sprintf(
+				'<input %s />',
+				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- cf7_add_password_field_format_atts() wraps Contact Form 7's escaped attribute formatter.
+				cf7_add_password_field_format_atts( array(
 				'type' => 'text',
 				'aria-labelledby' => $tgg->ref( 'password_strength-option-legend' ),
 				'aria-describedby' => $tgg->ref( 'password_strength-option-description' ),
@@ -369,9 +399,10 @@ function wpcf7_k_password_pane_confirm( $contact_form, $options) {
 			echo esc_html( __( 'Password Check', 'cf7-add-password-field' ) );
 		?></legend>
 		<label><?php
-		echo sprintf(
-			'<input %s />',
-			wpcf7_format_atts( array(
+			echo sprintf(
+				'<input %s />',
+				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- cf7_add_password_field_format_atts() wraps Contact Form 7's escaped attribute formatter.
+				cf7_add_password_field_format_atts( array(
 				'type' => 'text',
 				'aria-labelledby' => $tgg->ref( 'password_check-option-legend' ),
 				'aria-describedby' => $tgg->ref( 'password_check-option-description' ),
@@ -387,9 +418,10 @@ function wpcf7_k_password_pane_confirm( $contact_form, $options) {
 			echo esc_html( __( 'Specific Password Check', 'cf7-add-password-field' ) );
 		?></legend>
 		<label><?php
-		echo sprintf(
-			'<input %s placeholder="password1_password2"/>',
-			wpcf7_format_atts( array(
+			echo sprintf(
+				'<input %s placeholder="password1_password2"/>',
+				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- cf7_add_password_field_format_atts() wraps Contact Form 7's escaped attribute formatter.
+				cf7_add_password_field_format_atts( array(
 				'type' => 'text',
 				'aria-labelledby' => $tgg->ref( 'specific_password_check-option-legend' ),
 				'aria-describedby' => $tgg->ref( 'specific_password_check-option-description' ),
@@ -405,9 +437,10 @@ function wpcf7_k_password_pane_confirm( $contact_form, $options) {
 			echo esc_html( __( 'Hide Icon', 'cf7-add-password-field' ) );
 		?></legend>
 		<label><?php
-		echo sprintf(
-			'<input %s />',
-			wpcf7_format_atts( array(
+			echo sprintf(
+				'<input %s />',
+				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- cf7_add_password_field_format_atts() wraps Contact Form 7's escaped attribute formatter.
+				cf7_add_password_field_format_atts( array(
 				'type' => 'checkbox',
 				'aria-labelledby' => $tgg->ref( 'hideIcon-option-legend' ),
 				'aria-describedby' => $tgg->ref( 'hideIcon-option-description' ),
@@ -421,12 +454,13 @@ function wpcf7_k_password_pane_confirm( $contact_form, $options) {
 		<legend id="<?php echo esc_attr( $tgg->ref( 'icon_location-option-legend' ) ); ?>"><?php
 			echo esc_html( __( 'Icon Location', 'cf7-add-password-field' ) );
 		?></legend>
-		<label><?php echo esc_html( __( 'If you wish to customize the position of the icons, please set the following stylesheet values.', 'contact-form-7' ) );?></label><br/>
+		<label><?php echo esc_html( __( 'If you wish to customize the position of the icons, please set the following stylesheet values.', 'cf7-add-password-field' ) );?></label><br/>
 		<label>posotion:
 		<?php 
-		echo sprintf(
-			'<input %s />',
-			wpcf7_format_atts( array(
+			echo sprintf(
+				'<input %s />',
+				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- cf7_add_password_field_format_atts() wraps Contact Form 7's escaped attribute formatter.
+				cf7_add_password_field_format_atts( array(
 				'type' => 'text',
 				'aria-labelledby' => $tgg->ref( 'Icon_position-option-legend' ),
 				'aria-describedby' => $tgg->ref( 'Icon_position-option-description' ),
@@ -437,9 +471,10 @@ function wpcf7_k_password_pane_confirm( $contact_form, $options) {
 		?></label><br/>
 		<label>float:
 		<?php 
-		echo sprintf(
-			'<input %s />',
-			wpcf7_format_atts( array(
+			echo sprintf(
+				'<input %s />',
+				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- cf7_add_password_field_format_atts() wraps Contact Form 7's escaped attribute formatter.
+				cf7_add_password_field_format_atts( array(
 				'type' => 'text',
 				'aria-labelledby' => $tgg->ref( 'Icon_float-option-legend' ),
 				'aria-describedby' => $tgg->ref( 'Icon_float-option-description' ),
@@ -450,9 +485,10 @@ function wpcf7_k_password_pane_confirm( $contact_form, $options) {
 		?></label><br/>
 		<label>top:
 		<?php 
-		echo sprintf(
-			'<input %s />',
-			wpcf7_format_atts( array(
+			echo sprintf(
+				'<input %s />',
+				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- cf7_add_password_field_format_atts() wraps Contact Form 7's escaped attribute formatter.
+				cf7_add_password_field_format_atts( array(
 				'type' => 'text',
 				'aria-labelledby' => $tgg->ref( 'Icon_top-option-legend' ),
 				'aria-describedby' => $tgg->ref( 'Icon_top-option-description' ),
@@ -463,9 +499,10 @@ function wpcf7_k_password_pane_confirm( $contact_form, $options) {
 		?></label><br/>	
 		<label>margin:
 		<?php 
-		echo sprintf(
-			'<input %s />',
-			wpcf7_format_atts( array(
+			echo sprintf(
+				'<input %s />',
+				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- cf7_add_password_field_format_atts() wraps Contact Form 7's escaped attribute formatter.
+				cf7_add_password_field_format_atts( array(
 				'type' => 'text',
 				'aria-labelledby' => $tgg->ref( 'Icon_margin-option-legend' ),
 				'aria-describedby' => $tgg->ref( 'Icon_margin-option-description' ),
@@ -476,9 +513,10 @@ function wpcf7_k_password_pane_confirm( $contact_form, $options) {
 		?></label><br/>	
 		<label>margin-left:
 		<?php 
-		echo sprintf(
-			'<input %s />',
-			wpcf7_format_atts( array(
+			echo sprintf(
+				'<input %s />',
+				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- cf7_add_password_field_format_atts() wraps Contact Form 7's escaped attribute formatter.
+				cf7_add_password_field_format_atts( array(
 				'type' => 'text',
 				'aria-labelledby' => $tgg->ref( 'Icon_marginleft-option-legend' ),
 				'aria-describedby' => $tgg->ref( 'Icon_marginleft-option-description' ),
