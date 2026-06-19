@@ -4,7 +4,7 @@ Tags: contact form
 Requires at least: 6.2
 Requires PHP: 7.4
 Tested up to: 7.0
-Stable tag: 5.1.0
+Stable tag: 5.2.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -46,6 +46,9 @@ Reference: “Changing Contact Form 7 input values (28 January, 2023)” in http
 2. View of Contact Form 7
 
 == Changelog ==
+= 5.2.0 =
+* Update the css and webfonts powered by fontawesome.com from 6.4.2 to version 6.7.2
+
 = 5.1.0 =
 * Addressed WordPress.org Plugin Check warnings.
 * Confirmed compatibility with WordPress 7.0.
