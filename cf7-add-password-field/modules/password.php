@@ -125,7 +125,7 @@ function wpcf7_k_password_form_tag_handler( $tag ) {
 
 	if( $tag_id === $tag->name && !$tag->has_option( 'hideIcon' ) ){
  		  $html = sprintf(
-			'<span class="wpcf7-form-control-wrap" data-name="%1$s"><input %2$s />%3$s<span style="%4$s"  id="buttonEye-%5$s" class="fa fa-eye-slash" onclick="pushHideButton(\'%6$s\')"></span></span>',
+			'<span class="wpcf7-form-control-wrap" data-name="%1$s"><input %2$s />%3$s<span style="%4$s"  id="buttonEye-%5$s" class="fa-solid fa-eye-slash" onclick="pushHideButton(\'%6$s\')"></span></span>',
 			sanitize_html_class( $tag->name ), $atts_html, $validation_error, $style_attrib, $tag_id_attr, $tag_id_js );
 	}else{
 		$html = sprintf(

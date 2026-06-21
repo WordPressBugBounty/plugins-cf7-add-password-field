@@ -4,7 +4,7 @@ Tags: contact form
 Requires at least: 6.2
 Requires PHP: 7.4
 Tested up to: 7.0
-Stable tag: 5.2.0
+Stable tag: 5.3.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -32,6 +32,32 @@ Ex. If you set [password password-100], change to [password password-100 id:pass
 
 The feature uses the library(Web fonts and CSS) of Font Awesome ( https://fontawesome.com/ ).
 
+= How can I use my theme's Font Awesome stylesheet or another Font Awesome source? =
+This plugin loads the bundled Font Awesome stylesheet by default.
+
+If your theme or another plugin already loads Font Awesome 6, you can dequeue this plugin's stylesheet.
+
+If you want to use another Font Awesome source, such as a CDN, dequeue the bundled stylesheet and enqueue your own stylesheet from your theme or custom plugin.
+
+Example:
+
+`
+add_action( 'wp_enqueue_scripts', function() {
+    wp_dequeue_style( 'cf7_add_password_field_style' );
+
+    wp_enqueue_style(
+        'my-font-awesome',
+        'https://example.com/path/to/font-awesome.css',
+        array(),
+        null
+    );
+}, 20 );
+`
+
+Replace the example URL with the URL of your preferred Font Awesome stylesheet.
+
+Loading stylesheets from third-party services may have privacy, availability, and security implications.
+
 = How the customize the validation check? =
 Please see the following document.
 https://info.cseas.kyoto-u.ac.jp/en/links-en/plugin-en/wordpress-dev-info-en/cf7-add-password-field_en
@@ -46,6 +72,10 @@ Reference: “Changing Contact Form 7 input values (28 January, 2023)” in http
 2. View of Contact Form 7
 
 == Changelog ==
+= 5.3.0 =
+* Updated password visibility icons to use Font Awesome 6 native classes instead of legacy Font Awesome 4 compatibility classes.
+* Added README/FAQ documentation for replacing the bundled Font Awesome stylesheet with a preferred stylesheet.
+
 = 5.2.0 =
 * Update the css and webfonts powered by fontawesome.com from 6.4.2 to version 6.7.2
 
